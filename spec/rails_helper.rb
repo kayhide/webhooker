@@ -6,6 +6,7 @@ require File.expand_path('../dummy/config/environment', __FILE__)
 abort("Running in production mode!") if Rails.env.production?
 require 'spec_helper'
 require 'rspec/rails'
+require 'webmock/rspec'
 require 'pry'
 require 'factory_girl_rails'
 
