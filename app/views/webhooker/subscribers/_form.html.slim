@@ -1,0 +1,7 @@
+= form_for subscriber do |f|
+  tr id=dom_id(subscriber)
+    td= f.text_field :url, class: 'form-control input-sm'
+    td= f.text_field :secret, class: 'form-control input-sm'
+    td= f.button type: 'submit', class: 'btn btn-success btn-sm' do
+      i.fa.fa-plus
+

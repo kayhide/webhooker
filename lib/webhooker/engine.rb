@@ -1,3 +1,9 @@
+require 'jquery-rails'
+require 'slim-rails'
+require 'kaminari'
+require 'bootstrap-sass'
+require 'font-awesome-sass'
+
 module Webhooker
   class Engine < ::Rails::Engine
     isolate_namespace Webhooker

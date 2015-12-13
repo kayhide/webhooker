@@ -1,0 +1,7 @@
+.pull-right.text-primary
+  b>= number_with_delimiter(items.offset_value + 1)
+  | -
+  b<>= number_with_delimiter(items.offset_value + items.length)
+  | - Total
+  b<>= number_with_delimiter(items.total_count)
+  = 'item'.pluralize(items.total_count)

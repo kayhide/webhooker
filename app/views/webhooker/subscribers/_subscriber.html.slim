@@ -1,0 +1,6 @@
+tr id=dom_id(subscriber)
+  td= subscriber.url
+  td= subscriber.secret
+  td
+    = link_to subscriber_path(subscriber), method: :delete, data: { confirm: t("helpers.links.confirm", default: 'Are you sure?') }, class: 'btn btn-danger btn-xs' do
+      i.fa.fa-times

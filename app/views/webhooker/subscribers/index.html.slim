@@ -1,0 +1,17 @@
+- model_class = Webhooker::Subscriber
+- if @subscribers.blank?
+  .alert
+    p.text-muted=t 'no_item', item: model_class.model_name.human
+
+= paginate @subscribers
+table.table.table-striped.table-fixed
+  - if @subscribers.present?
+    caption= render 'layouts/webhooker/paginate_info', items: @subscribers
+  thead
+    tr
+      th= model_class.human_attribute_name(:url)
+      th= model_class.human_attribute_name(:secret)
+      th
+  tbody
+    = render @subscribers
+    = render 'form', subscriber: model_class.new
