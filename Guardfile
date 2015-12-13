@@ -1,4 +1,4 @@
-guard :rspec, cmd: 'bundle exec rspec' do
+guard :rspec, cmd: 'spec/dummy/bin/rspec' do
   require "guard/rspec/dsl"
   dsl = Guard::RSpec::Dsl.new(self)
 
