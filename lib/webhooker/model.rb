@@ -5,21 +5,34 @@ module Webhooker
   module Model
     extend ActiveSupport::Concern
 
-    def _trigger_webhook
-      attrs = attributes
-      if self.class.webhook_attributes
-        attrs = attrs.slice(*self.class.webhook_attributes)
-      end
+    def _trigger_webhook_on_create
+      _trigger_webhook :create
+    end
 
-      if (changes.keys & attrs.keys).present?
-        data = {
-          type: self.class.name,
-          attributes: attributes.as_json,
-          changes: changes.slice(*attrs.keys).as_json,
-        }
-        Subscriber.find_each do |subscriber|
-          TriggerJob.perform_later subscriber, data
+    def _trigger_webhook_on_update
+      filtered_changes =
+        if self.class.webhook_attributes
+          changes.slice(*self.class.webhook_attributes)
+        else
+          changes
         end
+      if filtered_changes.present?
+        _trigger_webhook :update, changes: filtered_changes
+      end
+    end
+
+    def _trigger_webhook_on_destroy
+      _trigger_webhook :destroy
+    end
+
+    def _trigger_webhook action, data = {}
+      data = {
+        resource: model_name.element,
+        action: action.to_s,
+        attributes: attributes.as_json,
+      }.merge(data)
+      Subscriber.find_each do |subscriber|
+        TriggerJob.perform_later subscriber, data
       end
     end
 
@@ -27,8 +40,10 @@ module Webhooker
       attr_accessor :webhook_attributes
 
       def webhooks *args
-        after_save :_trigger_webhook
         options = args.extract_options!
+        (options[:on] || %i(create update destroy)).each do |action|
+          send :"after_#{action}", :"_trigger_webhook_on_#{action}"
+        end
         @webhook_attributes = options[:attributes].try(:map, &:to_s)
       end
     end

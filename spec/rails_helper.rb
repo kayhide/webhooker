@@ -14,6 +14,8 @@ Dir[File.expand_path("../support/**/*.rb", __FILE__)].each { |f| require f }
 
 ActiveRecord::Migration.maintain_test_schema!
 
+FactoryGirl.definition_file_paths << 'spec/dummy/spec/factories'
+
 RSpec.configure do |config|
   config.filter_run focus: true
   config.run_all_when_everything_filtered = true

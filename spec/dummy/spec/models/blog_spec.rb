@@ -5,16 +5,28 @@ RSpec.describe Blog, type: :model do
     expect(Blog.ancestors).to include Webhooker::Model
   end
 
+  let(:blog) { Blog.new }
+
   after do
-    Blog.reset_callbacks :save
+    Blog.reset_callbacks :create
+    Blog.reset_callbacks :update
+    Blog.reset_callbacks :destroy
     Blog.webhook_attributes = nil
   end
 
   describe '.webhooks' do
-    it 'adds after_save callback' do
-      expect {
-        Blog.webhooks
-      }.to change { Blog._save_callbacks.count }.by(1)
+    it 'adds callbacks' do
+      expect(Blog).to receive(:after_create).with(:_trigger_webhook_on_create)
+      expect(Blog).to receive(:after_update).with(:_trigger_webhook_on_update)
+      expect(Blog).to receive(:after_destroy).with(:_trigger_webhook_on_destroy)
+      Blog.webhooks
+    end
+
+    it 'adds callbacks filterd by option' do
+      expect(Blog).to receive(:after_update).with(:_trigger_webhook_on_update)
+      expect(Blog).not_to receive(:after_create)
+      expect(Blog).not_to receive(:after_destroy)
+      Blog.webhooks on: [:update]
     end
 
     it 'sets webhook_attributes with option' do
@@ -23,34 +35,25 @@ RSpec.describe Blog, type: :model do
     end
   end
 
-  describe '#_trigger_webhook' do
+  describe '#_trigger_webhook_on_create' do
+    it 'calls #_trigger_webhook' do
+      expect(blog).to receive(:_trigger_webhook).with(:create)
+      blog._trigger_webhook_on_create
+    end
+  end
+
+  describe '#_trigger_webhook_on_update' do
     before do
       @subscriber = FactoryGirl.create(:webhooker_subscriber)
-      @blog = Blog.new
     end
 
+    let(:blog) { FactoryGirl.create(:blog) }
     let(:new_attributes) { { title: 'New Title', url: 'http://new-blog.test' } }
 
-    it 'enqueues Webhooker::TriggerJob' do
-      @blog.attributes = new_attributes
-      expect {
-        @blog._trigger_webhook
-      }.to change(ActiveJob::Base.queue_adapter.enqueued_jobs, :count).by(1)
-
-      job = ActiveJob::Base.queue_adapter.enqueued_jobs.last
-      expect(job[:job]).to eq Webhooker::TriggerJob
-    end
-
-    it 'enqueues Webhooker::TriggerJob with args' do
-      @blog.attributes = new_attributes
-      @blog._trigger_webhook
-
-      job = ActiveJob::Base.queue_adapter.enqueued_jobs.last
-      args = ActiveJob::Arguments.deserialize(job[:args])
-      expect(args[0]).to eq @subscriber
-      expect(args[1][:type]).to eq @blog.class.name
-      expect(args[1][:attributes]).to eq @blog.attributes.as_json
-      expect(args[1][:changes]).to eq @blog.changes.as_json
+    it 'calls #_trigger_webhook' do
+      blog.attributes = new_attributes
+      expect(blog).to receive(:_trigger_webhook).with(:update, changes: blog.changes)
+      blog._trigger_webhook_on_update
     end
 
     describe 'with attributes filter' do
@@ -59,20 +62,51 @@ RSpec.describe Blog, type: :model do
       end
 
       it 'filters changes' do
-        @blog.attributes = new_attributes
-        @blog._trigger_webhook
-
-        job = ActiveJob::Base.queue_adapter.enqueued_jobs.last
-        args = ActiveJob::Arguments.deserialize(job[:args])
-        expect(args[1][:changes].keys).to eq ['title']
+        blog.attributes = new_attributes
+        expect(blog).to receive(:_trigger_webhook).with(:update, changes: blog.changes.slice(:title))
+        blog._trigger_webhook_on_update
       end
 
       it 'skips if filtered changes is empty' do
-        @blog.attributes = new_attributes.slice(:url)
-        expect {
-          @blog._trigger_webhook
-        }.not_to change(ActiveJob::Base.queue_adapter.enqueued_jobs, :count)
+        blog.attributes = new_attributes.slice(:url)
+        expect(blog).not_to receive(:_trigger_webhook)
+        blog._trigger_webhook_on_update
       end
+    end
+  end
+
+  describe '#_trigger_webhook_on_destroy' do
+    it 'calls #_trigger_webhook' do
+      expect(blog).to receive(:_trigger_webhook).with(:destroy)
+      blog._trigger_webhook_on_destroy
+    end
+  end
+
+  describe '#_trigger_webhook' do
+    before do
+      @subscriber = FactoryGirl.create(:webhooker_subscriber)
+    end
+
+    it 'enqueues Webhooker::TriggerJob' do
+      expect {
+        blog._trigger_webhook :update
+      }.to change(ActiveJob::Base.queue_adapter.enqueued_jobs, :count).by(1)
+
+      job = ActiveJob::Base.queue_adapter.enqueued_jobs.last
+      expect(job[:job]).to eq Webhooker::TriggerJob
+    end
+
+    it 'enqueues Webhooker::TriggerJob with args' do
+      blog._trigger_webhook :action, a: 1, b: 2
+
+      job = ActiveJob::Base.queue_adapter.enqueued_jobs.last
+      args = ActiveJob::Arguments.deserialize(job[:args])
+      expect(args[0]).to eq @subscriber
+      expect(args[1][:resource]).to eq 'blog'
+      expect(args[1][:action]).to eq 'action'
+      expect(args[1][:attributes]).to eq blog.attributes.as_json
+      expect(args[1][:a]).to eq 1
+      expect(args[1][:b]).to eq 2
     end
   end
 end
