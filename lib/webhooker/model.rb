@@ -17,7 +17,7 @@ module Webhooker
           changes
         end
       if filtered_changes.present?
-        _trigger_webhook :update, changes: filtered_changes
+        _trigger_webhook :update, changes: filtered_changes.as_json
       end
     end
 

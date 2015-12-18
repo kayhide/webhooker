@@ -48,11 +48,17 @@ RSpec.describe Blog, type: :model do
     end
 
     let(:blog) { FactoryGirl.create(:blog) }
-    let(:new_attributes) { { title: 'New Title', url: 'http://new-blog.test' } }
+    let(:new_attributes) {
+      {
+        title: 'New Title',
+        url: 'http://new-blog.test',
+        updated_at: Time.zone.now
+      }
+    }
 
     it 'calls #_trigger_webhook' do
       blog.attributes = new_attributes
-      expect(blog).to receive(:_trigger_webhook).with(:update, changes: blog.changes)
+      expect(blog).to receive(:_trigger_webhook).with(:update, changes: blog.changes.as_json)
       blog._trigger_webhook_on_update
     end
 
@@ -63,7 +69,7 @@ RSpec.describe Blog, type: :model do
 
       it 'filters changes' do
         blog.attributes = new_attributes
-        expect(blog).to receive(:_trigger_webhook).with(:update, changes: blog.changes.slice(:title))
+        expect(blog).to receive(:_trigger_webhook).with(:update, changes: blog.changes.slice(:title).as_json)
         blog._trigger_webhook_on_update
       end
 
