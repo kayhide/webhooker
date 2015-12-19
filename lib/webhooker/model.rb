@@ -27,7 +27,7 @@ module Webhooker
 
     def _trigger_webhook action, data = {}
       data = {
-        resource: model_name.element,
+        resource: model_name.singular,
         action: action.to_s,
         attributes: attributes.as_json,
       }.merge(data)
