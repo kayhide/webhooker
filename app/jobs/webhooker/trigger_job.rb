@@ -2,8 +2,9 @@ module Webhooker
   class TriggerJob < ActiveJob::Base
     queue_as :default
 
-    def perform subscriber, payload
+    def perform subscriber, data
       @subscriber = subscriber
+      @data = data
       uri = URI.parse subscriber.url
       req = Net::HTTP::Post.new(uri.path)
       req.set_form_data payload
@@ -11,7 +12,7 @@ module Webhooker
         app = Rails.application.class.parent.to_s
         body = payload.to_json
         header = {
-          'Content-Type' => 'application/json; charset=utf-8',
+          'Content-Type' => 'application/json',
           'User-Agent' => app,
           "X-#{app}-Signature" => create_signature(body)
         }
@@ -21,6 +22,15 @@ module Webhooker
 
     def create_signature body
       OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), @subscriber.secret, body)
+    end
+
+    def payload
+      @payload ||=
+        if Webhooker.config.payload_key.present?
+          { Webhooker.config.payload_key => @data }
+        else
+          @data
+        end
     end
   end
 end
