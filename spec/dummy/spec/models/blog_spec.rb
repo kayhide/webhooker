@@ -12,6 +12,7 @@ RSpec.describe Blog, type: :model do
     Blog.reset_callbacks :update
     Blog.reset_callbacks :destroy
     Blog.webhook_attributes = nil
+    Blog.webhook_attributes_method = :as_json
   end
 
   describe '.webhooks' do
@@ -32,6 +33,11 @@ RSpec.describe Blog, type: :model do
     it 'sets webhook_attributes with option' do
       Blog.webhooks attributes: [:title]
       expect(Blog.webhook_attributes).to eq %w(title)
+    end
+
+    it 'sets webhook_attributes_methods with option' do
+      Blog.webhooks attributes_method: :as_webhook
+      expect(Blog.webhook_attributes_method).to eq :as_webhook
     end
   end
 
@@ -113,6 +119,15 @@ RSpec.describe Blog, type: :model do
       expect(args[1][:attributes]).to eq blog.attributes.as_json
       expect(args[1][:a]).to eq 1
       expect(args[1][:b]).to eq 2
+    end
+
+    it 'sets attributes with custom attributes_method' do
+      Blog.webhook_attributes_method = :as_webhook
+      blog._trigger_webhook :action
+
+      job = ActiveJob::Base.queue_adapter.enqueued_jobs.last
+      args = ActiveJob::Arguments.deserialize(job[:args])
+      expect(args[1][:attributes]).to eq blog.attributes.as_json.merge('as_webhook' => true)
     end
   end
 end

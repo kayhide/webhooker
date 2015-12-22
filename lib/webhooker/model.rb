@@ -29,7 +29,7 @@ module Webhooker
       data = {
         resource: model_name.singular,
         action: action.to_s,
-        attributes: attributes.as_json,
+        attributes: send(*self.class.webhook_attributes_method).as_json,
       }.merge(data)
       Subscriber.find_each do |subscriber|
         TriggerJob.perform_later subscriber, data
@@ -37,7 +37,7 @@ module Webhooker
     end
 
     module ClassMethods
-      attr_accessor :webhook_attributes
+      attr_accessor :webhook_attributes, :webhook_attributes_method
 
       def webhooks *args
         options = args.extract_options!
@@ -45,6 +45,7 @@ module Webhooker
           send :"after_#{action}", :"_trigger_webhook_on_#{action}"
         end
         @webhook_attributes = options[:attributes].try(:map, &:to_s)
+        @webhook_attributes_method = options[:attributes_method] || Webhooker.config.attributes_method
       end
     end
   end

@@ -8,10 +8,11 @@ RSpec.describe Nice::Blog, type: :model do
   let(:blog) { Nice::Blog.new }
 
   after do
-    Blog.reset_callbacks :create
-    Blog.reset_callbacks :update
-    Blog.reset_callbacks :destroy
-    Blog.webhook_attributes = nil
+    Nice::Blog.reset_callbacks :create
+    Nice::Blog.reset_callbacks :update
+    Nice::Blog.reset_callbacks :destroy
+    Nice::Blog.webhook_attributes = nil
+    Nice::Blog.webhook_attributes_method = :as_json
   end
 
   describe '#_trigger_webhook' do
