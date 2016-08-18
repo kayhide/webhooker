@@ -9,6 +9,7 @@ require 'rspec/rails'
 require 'webmock/rspec'
 require 'pry'
 require 'factory_girl_rails'
+require 'rails-controller-testing'
 
 Dir[File.expand_path("../support/**/*.rb", __FILE__)].each { |f| require f }
 
@@ -21,8 +22,13 @@ RSpec.configure do |config|
   config.run_all_when_everything_filtered = true
 
   config.use_transactional_fixtures = true
-  config.infer_spec_type_from_file_location!
   config.filter_rails_from_backtrace!
+
+  [:controller, :view, :request].each do |type|
+    config.include ::Rails::Controller::Testing::TestProcess, type: type
+    config.include ::Rails::Controller::Testing::TemplateAssertions, type: type
+    config.include ::Rails::Controller::Testing::Integration, type: type
+  end
 
   config.before do
     FactoryGirl.reload

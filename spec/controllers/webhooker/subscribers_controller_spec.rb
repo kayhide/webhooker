@@ -5,7 +5,7 @@ module Webhooker
     describe "GET #index" do
       it "assigns all subscribers as @subscribers" do
         subscriber = FactoryGirl.create(:webhooker_subscriber)
-        get :index
+        get :index, params: {}
         expect(assigns(:subscribers)).to eq([subscriber])
       end
     end
@@ -21,18 +21,18 @@ module Webhooker
 
         it "creates a new Subscriber" do
           expect {
-            post :create, {:subscriber => valid_attributes}
+            post :create, params: {subscriber: valid_attributes}
           }.to change(Subscriber, :count).by(1)
         end
 
         it "assigns a newly created subscriber as @subscriber" do
-          post :create, {:subscriber => valid_attributes}
+          post :create, params: {subscriber: valid_attributes}
           expect(assigns(:subscriber)).to be_a(Subscriber)
           expect(assigns(:subscriber)).to be_persisted
         end
 
         it "redirects to the subscribers list" do
-          post :create, {:subscriber => valid_attributes}
+          post :create, params: {subscriber: valid_attributes}
           expect(response).to redirect_to(subscribers_url)
         end
       end
@@ -46,7 +46,7 @@ module Webhooker
         }
 
         it "redirects to the subscribers list" do
-          post :create, {:subscriber => invalid_attributes}
+          post :create, params: {:subscriber => invalid_attributes}
           expect(response).to redirect_to(subscribers_url)
         end
       end
@@ -56,13 +56,13 @@ module Webhooker
       it "destroys the requested subscriber" do
         subscriber = FactoryGirl.create(:webhooker_subscriber)
         expect {
-          delete :destroy, {:id => subscriber.to_param}
+          delete :destroy, params: {id: subscriber.to_param}
         }.to change(Subscriber, :count).by(-1)
       end
 
       it "redirects to the subscribers list" do
         subscriber = FactoryGirl.create(:webhooker_subscriber)
-        delete :destroy, {:id => subscriber.to_param}
+        delete :destroy, params: {id: subscriber.to_param}
         expect(response).to redirect_to(subscribers_url)
       end
     end
